@@ -1,7 +1,6 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
-import * as pdfjs from "pdfjs-dist";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { upsertChunks, DocChunk } from "../src/services/ragService.ts";
 import { v4 as uuidv4 } from "uuid";
@@ -35,16 +34,34 @@ async function pdfToChunks(filePath: string, kind: DocChunk["kind"], chunkSize =
 
 (async () => {
   const base = path.resolve("data");
-  const sourceFile = path.join(base, "case_study_brief.pdf");
 
-  const kinds: DocChunk["kind"][] = ["job_desc", "cv_rubric", "case_brief", "project_rubric"];
-  let all: DocChunk[] = [];
+  //Map each actual file to its "kind"
+  const files: Record<DocChunk["kind"], string> = {
+    job_desc: path.join(base, "job_desc.pdf"),
+    cv_rubric: path.join(base, "cv_rubric.pdf"),
+    case_brief: path.join(base, "case_study_brief.pdf"),
+    project_rubric: path.join(base, "project_rubric.pdf"),
+  };
 
-  for (const kind of kinds) {
-    const chunks = await pdfToChunks(sourceFile, kind);
-    all = all.concat(chunks);
+  let allChunks: DocChunk[] = [];
+
+  for (const [kind, filePath] of Object.entries(files)) {
+    if (!fs.existsSync(filePath)) {
+      console.warn(`⚠️ File not found for kind "${kind}": ${filePath}`);
+      continue;
+    }
+
+    console.log(`Processing ${kind} from ${path.basename(filePath)}...`);
+    const chunks = await pdfToChunks(filePath, kind as DocChunk["kind"]);
+    console.log(`Created ${chunks.length} chunks from ${kind}`);
+    allChunks = allChunks.concat(chunks);
   }
 
-  await upsertChunks(all);
-  console.log(`ngested ${all.length} chunks to Qdrant`);
+  if (allChunks.length === 0) {
+    console.error("No chunks were created. Check file paths.");
+    return;
+  }
+
+  await upsertChunks(allChunks);
+  console.log(`Ingested ${allChunks.length} chunks into Qdrant`);
 })();

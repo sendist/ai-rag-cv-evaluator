@@ -30,7 +30,7 @@ export async function chat(system: string, user: string): Promise<string> {
     return text || "{}"; // Fallback if the response is empty
   } catch (err) {
     // 3. Log the full error object for more detailed debugging
-    console.error("❌ Gemini chat error:", err);
+    console.error("Gemini chat error:", err);
     return "{}"; // Return a default value on error
   }
 }

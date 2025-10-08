@@ -17,23 +17,11 @@ export async function ensureCollection() {
   }
 }
 
-// export async function upsertChunks(chunks: DocChunk[]) {
-//   await ensureCollection();
-//   const vectors = await embed(chunks.map(c => c.text));
-//   await client.upsert(COLLECTION, {
-//     points: chunks.map((c, i) => ({
-//       id: c.id,
-//       vector: vectors[i],
-//       payload: { text: c.text, kind: c.kind }
-//     }))
-//   });
-// }
-
 export async function upsertChunks(chunks: DocChunk[]) {
   await ensureCollection();
   const vectors = await embed(chunks.map(c => c.text));
 
-  const BATCH_SIZE = 1; // safe batch size
+  const BATCH_SIZE = 1;
   for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
     const batch = chunks.slice(i, i + BATCH_SIZE);
     const batchVectors = vectors.slice(i, i + BATCH_SIZE);
@@ -46,30 +34,18 @@ export async function upsertChunks(chunks: DocChunk[]) {
           payload: { text: c.text, kind: c.kind },
         })),
       });
-      console.log(`✅ Uploaded batch ${i / BATCH_SIZE + 1}`);
+      console.log(`Uploaded batch ${i / BATCH_SIZE + 1}`);
     } catch (err: any) {
-      console.error(`❌ Failed batch ${i / BATCH_SIZE + 1}:`, err.message);
+      console.error(`Failed batch ${i / BATCH_SIZE + 1}:`, err.message);
     }
   }
 }
 
-
-// export async function searchRelevant(query: string, kinds: DocChunk["kind"][], limit = 6) {
-//   const [qVec] = await embed([query]);
-//   const res = await client.search(COLLECTION, {
-//     vector: qVec,
-//     limit,
-//     filter: { must: [{ key: "kind", match: { any: kinds } }] },
-//     with_payload: true
-//   });
-//   return res.map(r => (r.payload as any).text as string);
-// }
-
 export async function searchRelevant(query: string, kinds: DocChunk["kind"][], limit = 6) {
-  console.log("🔍 Searching relevant:", kinds.join(","));
+  console.log("Searching relevant:", kinds.join(","));
   const [qVec] = await embed([query]);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const res = await client.search(COLLECTION, {
@@ -82,7 +58,7 @@ export async function searchRelevant(query: string, kinds: DocChunk["kind"][], l
     clearTimeout(timeout);
     return res.map(r => (r.payload as any).text as string);
   } catch (err: any) {
-    console.error("❌ searchRelevant failed for", kinds, err.message);
+    console.error("searchRelevant failed for", kinds, err.message);
     return [];
   }
 }
