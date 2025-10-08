@@ -1,6 +1,6 @@
 # AI Screening Backend (Node.js + OpenAI + Qdrant)
 
-Automated CV & project report evaluation using RAG + LLM chaining with async job orchestration (BullMQ).
+Automated CV & project report evaluation using RAG + LLM chaining with async job orchestration (BullMQ). This project was built as part of a backend case study to demonstrate AI-driven document evaluation using Retrieval Augmented Generation (RAG) and asynchronous job orchestration.
 
 ## Prereqs
 - Node.js 20+
@@ -17,12 +17,22 @@ Automated CV & project report evaluation using RAG + LLM chaining with async job
 4. Install deps: `npm i`
 5. Ingest ground-truth: `npx tsx scripts/ingest.ts`
 6. Run API: `npm run dev`
+7. Run worker: `npx tsx src/jobs/evaluator.worker.ts`
 
 ## API
 - `POST /upload` → multipart form with `cv` and `report` (PDFs). Returns file ids.
 - `POST /evaluate` → body `{ job_title, cv_id, report_id }`. Returns `{ id, status: "queued" }`.
 - `GET /result/:id` → returns `{ status }` or final result JSON.
+- Interactive docs available at http://localhost:3000/docs
 
 ## Notes
 - RAG uses Qdrant (Xenova/all-MiniLM-L6-v2, dim=384).
 - Jobs retried with exponential backoff.
+
+## Tech Stack
+- Node.js + Express + TypeScript
+- Qdrant (Vector DB)
+- BullMQ + Redis (job orchestration)
+- Gemini 2.5 Flash (LLM)
+- Xenova/all-MiniLM-L6-v2 (embedding model)
+- Swagger 
